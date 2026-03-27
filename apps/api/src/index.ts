@@ -105,7 +105,10 @@ app.get('/health', async (_, res) => {
 });
 
 // ─── Generate ─────────────────────────────────────────────────
-app.post('/api/generate', aiLimiter, requireAuth, async (req, res) => {
+// Health check
+app.get('/', (_req, res) => {
+  res.json({ status: 'ok', service: 'brandforge-api' });
+});app.post('/api/generate', aiLimiter, requireAuth, async (req, res) => {
   try {
     const { prompt, type, templateId, userContext } = req.body as GenerationRequest;
 
