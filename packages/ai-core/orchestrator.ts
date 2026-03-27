@@ -12,8 +12,6 @@ import type {
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ─── Timeout helper ───────────────────────────────────────────
-// Wraps any promise with a hard deadline. AI APIs can stall silently —
-// without this, a single hung request holds the Express worker indefinitely.
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
     promise,
@@ -24,8 +22,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 // ─── Retry helper ─────────────────────────────────────────────
-// AI APIs have ~5–10% transient failure rates. One retry doubles reliability
-// without meaningfully increasing latency on the happy path.
 async function withRetry<T>(fn: () => Promise<T>, label: string, attempts = 2): Promise<T> {
   for (let i = 0; i < attempts; i++) {
     try {
@@ -33,12 +29,20 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, attempts = 2): 
     } catch (err) {
       const isLast = i === attempts - 1;
       if (isLast) throw err;
-      const delay = 1000 * (i + 1); // 1s, 2s, ...
+      const delay = 1000 * (i + 1);
       console.warn(`[orchestrator] ${label} failed (attempt ${i + 1}/${attempts}), retrying in ${delay}ms:`, (err as Error).message);
       await new Promise(r => setTimeout(r, delay));
     }
   }
-  throw new Error(`[orchestrator] ${label} exhausted all ${attempts} attempts`); // unreachable but satisfies TS
+  throw new Error(`[orchestrator] ${label} exhausted all ${attempts} attempts`);
+}
+
+// ─── Strip markdown fences helper ────────────────────────────
+function stripFences(text: string): string {
+  return text
+    .replace(/^```\s*(?:json)?\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
 }
 
 // ─── Stage 1: Claude — Narrative & Branding ─────────────────
@@ -94,12 +98,11 @@ Generate a JSON object with:
   );
 
   const text = response.content[0].type === 'text' ? (response.content[0].text ?? '') : '';
-  const parsed = JSON.parse(text);
+  const parsed = JSON.parse(stripFences(text));
   return { narrative: parsed.narrative, brandingProfile: parsed.brandingProfile };
 }
 
 // ─── Stage 2: Structure — JSON → Component Layout ────────────
-// Previously used GPT-4o. Now uses Claude for a single-engine pipeline.
 
 async function runStructureStage(
   prompt: string,
@@ -180,7 +183,7 @@ CRITICAL RULES:
   );
 
   const text = response.content[0].type === 'text' ? (response.content[0].text ?? '{}') : '{}';
-  return JSON.parse(text);
+  return JSON.parse(stripFences(text));
 }
 
 // ─── Stage 3: Content Enrichment ─────────────────────────────
@@ -189,7 +192,6 @@ async function enrichContent(
   sections: Section[],
   prompt: string
 ): Promise<Section[]> {
-  // Enrich projects section with realistic dummy data if empty
   return sections.map((section) => {
     if (section.type === 'projects') {
       const content = section.content as Record<string, unknown>;
@@ -216,7 +218,6 @@ export async function orchestrateGeneration(
 ): Promise<GenerationResult> {
   const startTime = Date.now();
 
-  // Stage 1: Claude narrative (parallel-safe)
   onProgress?.('claude', 10);
   const { narrative, brandingProfile } = await runClaudeStage(
     request.prompt,
@@ -225,7 +226,6 @@ export async function orchestrateGeneration(
   );
   onProgress?.('claude', 40);
 
-  // Stage 2: Claude structure (previously GPT-4o)
   onProgress?.('structuring', 50);
   const { sections, layout, theme } = await runStructureStage(
     request.prompt,
@@ -235,7 +235,6 @@ export async function orchestrateGeneration(
   );
   onProgress?.('structuring', 75);
 
-  // Stage 3: Enrich & validate
   onProgress?.('rendering', 80);
   const enrichedSections = await enrichContent(sections, request.prompt);
   onProgress?.('rendering', 95);
@@ -254,7 +253,6 @@ export async function orchestrateGeneration(
 }
 
 // ─── Portfolio Scorer ─────────────────────────────────────────
-// Previously used GPT-4o. Now uses Claude.
 
 export async function scorePortfolio(
   project: { sections: Section[]; prompt?: string },
@@ -304,7 +302,7 @@ Return:
   );
 
   const text = response.content[0].type === 'text' ? (response.content[0].text ?? '{}') : '{}';
-  return JSON.parse(text);
+  return JSON.parse(stripFences(text));
 }
 
 // ─── LinkedIn Optimizer ──────────────────────────────────────
@@ -346,7 +344,7 @@ Return JSON:
   );
 
   const text = response.content[0].type === 'text' ? (response.content[0].text ?? '{}') : '{}';
-  return JSON.parse(text);
+  return JSON.parse(stripFences(text));
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
