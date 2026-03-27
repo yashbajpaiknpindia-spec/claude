@@ -20,7 +20,6 @@ const REQUIRED_ENV: Record<string, string> = {
   JWT_SECRET:       'JWT signing secret',
   ADMIN_PASSWORD:   'Admin panel password',
   ANTHROPIC_API_KEY:'Claude AI — required for portfolio/resume generation',
-  OPENAI_API_KEY:   'OpenAI GPT-4o — required for layout/content generation',
 };
 
 (function validateEnv() {
