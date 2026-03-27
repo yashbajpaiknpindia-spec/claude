@@ -88,7 +88,7 @@ const content = (section.content || {}) as unknown as SkillsContent;
 // ─── Experience Section ───────────────────────────────────────
 
 export function ExperienceSection({ section, theme }: SectionProps) {
-  const content = (section.content || {}) as ExperienceContent;
+ const content = (section.content || {}) as unknown as ExperienceContent;
 
   const accent = theme?.colors?.accent || '#6366f1';
   const bg = theme?.colors?.bg || '#fff';
