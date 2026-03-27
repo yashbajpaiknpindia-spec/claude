@@ -13,7 +13,11 @@ export function middleware(request: NextRequest) {
   }
 
   // User route protection
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/editor')) {
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/editor') ||
+    pathname.startsWith('/generate')
+  ) {
     const token = request.cookies.get('bf_token')?.value;
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url));
@@ -24,5 +28,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/editor/:path*'],
+  matcher: ['/admin/:path*', '/dashboard/:path*', '/editor/:path*', '/generate', '/generate/:path*'],
 };
