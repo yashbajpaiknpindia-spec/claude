@@ -1,6 +1,6 @@
 import type { Section, Theme, SkillsContent, ExperienceContent, TestimonialsContent, ContactContent } from '@brandforge/types';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Twitter, Linkedin, Github, Globe } from 'lucide-react';
+import { Mail, Phone, Twitter, Linkedin, Github, Globe } from 'lucide-react';
 
 interface SectionProps {
   section: Section;
@@ -215,14 +215,12 @@ export function ContactSection({ section, theme }: SectionProps) {
             {content.availabilityBadge}
           </div>
         )}
-
         <h2 style={{ fontFamily: fontHeading }} className="text-5xl font-bold mb-6">
           {content?.title || "Let's work together"}
         </h2>
         <p style={{ color: textMuted }} className="text-lg mb-10">
           {content?.subtitle}
         </p>
-
         <div className="flex flex-wrap justify-center gap-4 mb-10">
           {content?.email && (
             
@@ -245,7 +243,6 @@ export function ContactSection({ section, theme }: SectionProps) {
             </a>
           )}
         </div>
-
         {(content?.socials ?? []).length > 0 && (
           <div className="flex justify-center gap-3">
             {(content.socials ?? []).map((social) => {
