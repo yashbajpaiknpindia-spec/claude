@@ -178,8 +178,7 @@ export function ExperienceSection({ section, theme }: SectionProps) {
 // ─── Testimonials Section ─────────────────────────────────────
 
 export function TestimonialsSection({ section, theme }: SectionProps) {
-  const content = (section.content || {}) as TestimonialsContent;
-
+ const content = (section.content || {}) as unknown as TestimonialsContent;
   const accent = theme?.colors?.accent || '#6366f1';
   const bg = theme?.colors?.bg || '#fff';
   const surface = theme?.colors?.surface || '#f8fafc';
@@ -258,8 +257,7 @@ const SOCIAL_ICONS: Record<string, React.ElementType> = {
 };
 
 export function ContactSection({ section, theme }: SectionProps) {
-  const content = (section.content || {}) as ContactContent;
-
+  const content = (section.content || {}) as unknown as ContactContent;
   const accent = theme?.colors?.accent || '#6366f1';
   const bg = theme?.colors?.bg || '#fff';
   const text = theme?.colors?.text || '#111';
