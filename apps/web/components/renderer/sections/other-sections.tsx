@@ -21,7 +21,7 @@ interface SectionProps {
 // ─── Skills Section ───────────────────────────────────────────
 
 export function SkillsSection({ section, theme }: SectionProps) {
-  const content = (section.content || {}) as SkillsContent;
+const content = (section.content || {}) as unknown as SkillsContent;
 
   const accent = theme?.colors?.accent || '#6366f1';
   const surface = theme?.colors?.surface || '#f8fafc';
