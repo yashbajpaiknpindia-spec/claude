@@ -41,8 +41,8 @@ function asyncHandler(
     fn(req, res, next).catch(next);
   };
 }
-
 const app = express();
+app.set('trust proxy', 1); // Required for Render.com — trusts X-Forwarded-For header
 
 // ─── CORS config ─────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
