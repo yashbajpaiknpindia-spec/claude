@@ -1,0 +1,90 @@
+# BrandForge — Full Stack on Render
+# Frontend + Backend + PostgreSQL Database
+#
+# Deploy: render.com → New → Blueprint → connect repo
+# Render reads this file and creates all 3 services automatically.
+services:
+  # ─── Backend API (Express + Node.js) ─────────────────────────
+  - type: web
+    name: brandforge-api
+    runtime: node
+    # Build from repo root so workspaces resolve, then build all packages
+    # via turbo (which respects ^build dependencies: types → ai-core → api)
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: node apps/api/dist/index.js
+    # Run DB migrations before each deploy — idempotent (IF NOT EXISTS everywhere)
+    preDeployCommand: node scripts/migrate-render.js
+    healthCheckPath: /health
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: brandforge-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # FIXED: Updated to match actual deployed frontend service URL
+      - key: FRONTEND_URL
+        value: https://brandforge-frontend-ussx.onrender.com
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_PHONE
+        sync: false
+      # Optional — only required if using the Vercel deploy-to-custom-domain feature
+      - key: VERCEL_TOKEN
+        sync: false
+      - key: VERCEL_TEAM_ID
+        sync: false
+      # Prevent Puppeteer from downloading Chromium at build time (~120MB).
+      # Puppeteer is optionalDependency — PDF route returns 503 gracefully
+      # if Chromium is unavailable. To enable PDF export on Render, upgrade
+      # to a plan with full system dependencies and remove these two vars.
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: "true"
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: "true"
+  # ─── Frontend (Next.js) ───────────────────────────────────────
+  - type: web
+    name: brandforge-web
+    runtime: node
+    # Build from repo root so @brandforge/types workspace dep resolves correctly.
+    # turbo builds types first (^build), then the Next.js app.
+    buildCommand: npm install --include=dev && npm run build
+    # Use next start instead of server.js — handles PORT, hostname, errors natively.
+    startCommand: cd apps/web && npx next start -p $PORT -H 0.0.0.0
+    healthCheckPath: /
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: HOSTNAME
+        value: 0.0.0.0
+      # Runtime API proxy target — used by Next.js rewrites in next.config.mjs.
+      # This is a server-side env var (no NEXT_PUBLIC_ prefix) — resolved at
+      # request time, NOT baked into the bundle. Safe to set before first deploy.
+      - key: INTERNAL_API_URL
+        fromService:
+          name: brandforge-api
+          type: web
+          property: host
+          transform: "https://{host}"
+      # FIXED: Set explicitly so browser clients call the correct API URL
+      # without a trailing slash — prevents the //route double-slash bug
+      - key: NEXT_PUBLIC_API_URL
+        value: https://brandforge-9kf0.onrender.com/api
+# ─── PostgreSQL Database ───────────────────────────────────────
+databases:
+  - name: brandforge-db
+    databaseName: brandforge
+    user: brandforge_user
+    plan: starter
